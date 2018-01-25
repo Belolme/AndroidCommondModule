@@ -1,4 +1,4 @@
-package com.billin.www.commondmodual.ui;
+package com.billin.www.commondmodual.ui.recyclerview;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
