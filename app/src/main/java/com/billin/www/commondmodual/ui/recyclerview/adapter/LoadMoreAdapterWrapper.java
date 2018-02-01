@@ -1,4 +1,4 @@
-package com.billin.www.commondmodual.ui.recyclerview;
+package com.billin.www.commondmodual.ui.recyclerview.adapter;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -12,20 +12,8 @@ import android.view.ViewGroup;
  */
 public abstract class LoadMoreAdapterWrapper extends RecyclerView.Adapter {
 
-    public interface OnLoadingListener {
-        void onLoading();
-    }
-
-    private class LoadMoreHolder extends RecyclerView.ViewHolder {
-        LoadMoreHolder(View itemView) {
-            super(itemView);
-        }
-    }
-
     private static int LOADING_MORE_TYPE = Integer.MAX_VALUE - 153;
-
     private RecyclerView.Adapter mInnerAdapter;
-
     private OnLoadingListener mOnLoadingListener;
 
     public LoadMoreAdapterWrapper(RecyclerView.Adapter adapter) {
@@ -128,4 +116,14 @@ public abstract class LoadMoreAdapterWrapper extends RecyclerView.Adapter {
      * @return true will display view more item, other wise.
      */
     abstract boolean isLoadMore();
+
+    public interface OnLoadingListener {
+        void onLoading();
+    }
+
+    private class LoadMoreHolder extends RecyclerView.ViewHolder {
+        LoadMoreHolder(View itemView) {
+            super(itemView);
+        }
+    }
 }
