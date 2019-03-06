@@ -6,6 +6,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatImageView;
@@ -120,6 +121,7 @@ public class CropImageView extends AppCompatImageView {
      */
     public void setRatio(float ratio) {
         this.ratio = ratio;
+        if (frameCoord != null) frameCoord.setEmpty();
         configFrame();
     }
 
@@ -140,12 +142,14 @@ public class CropImageView extends AppCompatImageView {
     @Override
     public void setImageDrawable(@Nullable Drawable drawable) {
         super.setImageDrawable(drawable);
+        if (frameCoord != null) frameCoord.setEmpty();
         configFrame();
     }
 
     @Override
     public void setImageResource(int resId) {
         super.setImageResource(resId);
+        if (frameCoord != null) frameCoord.setEmpty();
         configFrame();
     }
 
@@ -157,6 +161,17 @@ public class CropImageView extends AppCompatImageView {
             dW = dW < 0 ? d.getBounds().width() : dW;
             float dH = d.getIntrinsicHeight();
             dH = dH < 0 ? d.getBounds().height() : dH;
+
+            // 如果符合以下判断不重新生成裁剪框，
+            // 这么做是为了在旋转屏幕等操作重新生成这个视图的时候裁剪框状态保持不变。
+            // 不过这里会出现一个问题，就是设置不同图片时，裁剪框的状态会随着
+            // 设置的图片尺寸变换而变换（目前的解决方案是在设置图片的时候把 frameCoord 重置了）。
+            if (frameCoord.width() != 0
+                    && frameCoord.height() != 0
+                    && frameCoord.width() <= dW
+                    && frameCoord.height() <= dH) {
+                return;
+            }
 
             // 根据 ratio 生成对应的裁剪框
             if (ratio == 0) {
@@ -432,7 +447,70 @@ public class CropImageView extends AppCompatImageView {
 
     @Override
     protected Parcelable onSaveInstanceState() {
-        return super.onSaveInstanceState();
+        Parcelable p = super.onSaveInstanceState();
+        SavedState s = new SavedState(p);
+        s.frameLeft = frameCoord.left;
+        s.frameRight = frameCoord.right;
+        s.frameTop = frameCoord.top;
+        s.frameBottom = frameCoord.bottom;
+
+        return s;
     }
 
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        SavedState s = (SavedState) state;
+        super.onRestoreInstanceState(((SavedState) state).getSuperState());
+
+        frameCoord.left = s.frameLeft;
+        frameCoord.top = s.frameTop;
+        frameCoord.right = s.frameRight;
+        frameCoord.bottom = s.frameBottom;
+        invalidate();
+    }
+
+    private static class SavedState extends BaseSavedState {
+
+        public static final Parcelable.Creator<SavedState> CREATOR =
+                new Parcelable.Creator<SavedState>() {
+                    @Override
+                    public SavedState createFromParcel(Parcel source) {
+                        return new SavedState(source);
+                    }
+
+                    @Override
+                    public SavedState[] newArray(int size) {
+                        return new SavedState[size];
+                    }
+                };
+
+        float frameLeft;
+
+        float frameTop;
+
+        float frameRight;
+
+        float frameBottom;
+
+        SavedState(Parcelable parcelable) {
+            super(parcelable);
+        }
+
+        SavedState(Parcel in) {
+            super(in);
+            frameLeft = in.readFloat();
+            frameTop = in.readFloat();
+            frameRight = in.readFloat();
+            frameBottom = in.readFloat();
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+            out.writeFloat(frameLeft);
+            out.writeFloat(frameTop);
+            out.writeFloat(frameRight);
+            out.writeFloat(frameBottom);
+        }
+    }
 }
