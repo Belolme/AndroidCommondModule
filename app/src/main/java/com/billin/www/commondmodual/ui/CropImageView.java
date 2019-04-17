@@ -2,8 +2,11 @@ package com.billin.www.commondmodual.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
@@ -74,6 +77,12 @@ public class CropImageView extends AppCompatImageView {
      */
     private float ratio = 0f;
 
+    private FrameChangeListener frameChangeListener;
+
+    private float[] auxiliaryLine;
+
+    private PorterDuffXfermode clearMode;
+
     public CropImageView(Context context) {
         super(context);
         init();
@@ -95,6 +104,8 @@ public class CropImageView extends AppCompatImageView {
         nodeWidth = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, FRAME_NODE_WIDTH, m);
 
         framePaint.setStrokeCap(Paint.Cap.ROUND);
+        auxiliaryLine = new float[4 * 2 * 2];
+        clearMode = new PorterDuffXfermode(PorterDuff.Mode.CLEAR);
 
         // 可能在初始化的时候配置了图片，所以这里同步一下尺寸
         configFrame();
@@ -111,9 +122,17 @@ public class CropImageView extends AppCompatImageView {
         boolean change = super.setFrame(l, t, r, b);
 
         // 有些 Drawable 依赖于 View 的尺寸
-        configFrame();
+        if (change) configFrame();
 
         return change;
+    }
+
+    public FrameChangeListener getFrameChangeListener() {
+        return frameChangeListener;
+    }
+
+    public void setFrameChangeListener(FrameChangeListener frameChangeListener) {
+        this.frameChangeListener = frameChangeListener;
     }
 
     /**
@@ -121,15 +140,37 @@ public class CropImageView extends AppCompatImageView {
      */
     public void setRatio(float ratio) {
         this.ratio = ratio;
-        if (frameCoord != null) frameCoord.setEmpty();
-        configFrame();
-    }
+        if (frameCoord != null) {
+            Drawable d = getDrawable();
+            if (frameCoord.width() == 0 || frameCoord.height() == 0 || d == null) {
+                configFrame();
+            } else {
 
-    /**
-     * 设置裁剪框的颜色
-     */
-    public void setFrameTint(int tint) {
-        framePaint.setColor(tint);
+                // 如果 ratio 为 0 表示自由裁剪，那么不用修改裁剪框位置
+                if (ratio == 0) return;
+
+                // 根据缩放后的宽高重新设置选框宽高，优先宽度不变
+                float width = frameCoord.width();
+                float right = frameCoord.right;
+                float height = width / ratio;
+                float bottom = frameCoord.top + height;
+
+                // 高度超出了图片高度，改成高度不变
+                float dH = d.getIntrinsicHeight();
+                if (bottom > dH) {
+                    bottom = frameCoord.bottom;
+                    height = frameCoord.height();
+
+                    width = ratio * height;
+                    right = frameCoord.left + width;
+                }
+
+                frameCoord.right = right;
+                frameCoord.bottom = bottom;
+            }
+
+            invalidate();
+        }
     }
 
     /**
@@ -196,6 +237,10 @@ public class CropImageView extends AppCompatImageView {
             // 移动到中间
             frameCoord.offset(dW / 2f - frameCoord.width() / 2f,
                     dH / 2f - frameCoord.height() / 2f);
+
+            if (frameChangeListener != null) {
+                frameChangeListener.onFrameChange(frameCoord);
+            }
         }
     }
 
@@ -273,6 +318,11 @@ public class CropImageView extends AppCompatImageView {
                 frameCoord.offset(offsetX, offsetY);
                 lastPointX = xInImg;
                 lastPointY = yInImg;
+
+                if (frameChangeListener != null) {
+                    frameChangeListener.onFrameChange(frameCoord);
+                }
+
                 invalidate();
 
                 return true;
@@ -369,6 +419,10 @@ public class CropImageView extends AppCompatImageView {
             }
             frameCoord.sort();
 
+            if (frameChangeListener != null) {
+                frameChangeListener.onFrameChange(frameCoord);
+            }
+
             invalidate();
 
             return true;
@@ -404,8 +458,7 @@ public class CropImageView extends AppCompatImageView {
         if (matrix == null && getPaddingTop() == 0 && getPaddingLeft() == 0) {
             drawFrame(canvas, 1);
         } else {
-            final int saveCount = canvas.getSaveCount();
-            canvas.save();
+            final int saveCount = canvas.saveLayer(null, framePaint, Canvas.ALL_SAVE_FLAG);
 
             if (getCropToPadding()) {
                 final int scrollX = getScrollX();
@@ -433,16 +486,60 @@ public class CropImageView extends AppCompatImageView {
      *              图片的放大缩小而放大缩小。
      */
     private void drawFrame(Canvas canvas, float scale) {
+
+        // 绘制边框外蒙版
+        framePaint.setStyle(Paint.Style.FILL);
+        framePaint.setColor(Color.parseColor("#66000000"));
+        canvas.drawRect(0, 0,
+                getDrawable().getIntrinsicWidth(),
+                getDrawable().getIntrinsicHeight(),
+                framePaint);
+
+        framePaint.setXfermode(clearMode);
+        canvas.drawRect(frameCoord, framePaint);
+        framePaint.setXfermode(null);
+
+        // 绘制边框
+        framePaint.setColor(Color.parseColor("#99f5a623"));
         framePaint.setStyle(Paint.Style.STROKE);
         framePaint.setStrokeWidth(edgeWith / scale);
         canvas.drawRect(frameCoord, framePaint);
 
+        // 绘制辅助线
+        framePaint.setStrokeWidth(1);
+        float widthBy3 = frameCoord.width() / 3f;
+        float heightBy3 = frameCoord.height() / 3f;
+        auxiliaryLine[0] = frameCoord.left;
+        auxiliaryLine[1] = frameCoord.top + heightBy3;
+        auxiliaryLine[2] = frameCoord.right;
+        auxiliaryLine[3] = frameCoord.top + heightBy3;
+
+        auxiliaryLine[4] = frameCoord.left;
+        auxiliaryLine[5] = frameCoord.bottom - heightBy3;
+        auxiliaryLine[6] = frameCoord.right;
+        auxiliaryLine[7] = frameCoord.bottom - heightBy3;
+
+        auxiliaryLine[8] = frameCoord.left + widthBy3;
+        auxiliaryLine[9] = frameCoord.top;
+        auxiliaryLine[10] = frameCoord.left + widthBy3;
+        auxiliaryLine[11] = frameCoord.bottom;
+
+        auxiliaryLine[12] = frameCoord.right - widthBy3;
+        auxiliaryLine[13] = frameCoord.top;
+        auxiliaryLine[14] = frameCoord.right - widthBy3;
+        auxiliaryLine[15] = frameCoord.bottom;
+        framePaint.setColor(Color.WHITE);
+        canvas.drawLines(auxiliaryLine, framePaint);
+
+        // 绘制边框触摸点
+        framePaint.setColor(Color.parseColor("#f5a623"));
         framePaint.setStyle(Paint.Style.FILL);
         framePaint.setStrokeWidth(nodeWidth / scale);
-        canvas.drawPoint(frameCoord.left, frameCoord.top, framePaint);
-        canvas.drawPoint(frameCoord.left, frameCoord.bottom, framePaint);
-        canvas.drawPoint(frameCoord.right, frameCoord.top, framePaint);
-        canvas.drawPoint(frameCoord.right, frameCoord.bottom, framePaint);
+        float radius = nodeWidth / scale / 2;
+        canvas.drawCircle(frameCoord.left, frameCoord.top, radius, framePaint);
+        canvas.drawCircle(frameCoord.left, frameCoord.bottom, radius, framePaint);
+        canvas.drawCircle(frameCoord.right, frameCoord.top, radius, framePaint);
+        canvas.drawCircle(frameCoord.right, frameCoord.bottom, radius, framePaint);
     }
 
     @Override
@@ -466,13 +563,18 @@ public class CropImageView extends AppCompatImageView {
         frameCoord.top = s.frameTop;
         frameCoord.right = s.frameRight;
         frameCoord.bottom = s.frameBottom;
+
+        if (frameChangeListener != null) {
+            frameChangeListener.onFrameChange(frameCoord);
+        }
+
         invalidate();
     }
 
     private static class SavedState extends BaseSavedState {
 
-        public static final Parcelable.Creator<SavedState> CREATOR =
-                new Parcelable.Creator<SavedState>() {
+        public static final Creator<SavedState> CREATOR =
+                new Creator<SavedState>() {
                     @Override
                     public SavedState createFromParcel(Parcel source) {
                         return new SavedState(source);
@@ -512,5 +614,9 @@ public class CropImageView extends AppCompatImageView {
             out.writeFloat(frameRight);
             out.writeFloat(frameBottom);
         }
+    }
+
+    public interface FrameChangeListener {
+        void onFrameChange(RectF newFrame);
     }
 }
