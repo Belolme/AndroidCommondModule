@@ -1,8 +1,10 @@
-package com.example.billin.opengl
+package com.example.billin.opengl.program
 
 import android.content.Context
 import android.graphics.Color
 import android.opengl.GLES20
+import com.example.billin.opengl.R
+import com.example.billin.opengl.base.Program
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 

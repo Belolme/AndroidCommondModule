@@ -1,4 +1,4 @@
-package com.example.billin.opengl
+package com.example.billin.opengl.base
 
 import android.content.Context
 import android.opengl.GLES20

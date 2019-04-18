@@ -4,7 +4,12 @@ import android.content.Context
 import android.graphics.Color
 import android.opengl.Matrix
 import android.util.Log
-import com.example.billin.opengl.*
+import com.example.billin.opengl.BuildConfig
+import com.example.billin.opengl.base.apply
+import com.example.billin.opengl.base.draw
+import com.example.billin.opengl.program.GradientTriangleProgram
+import com.example.billin.opengl.program.RoundCapLineProgram
+import com.example.billin.opengl.program.RoundPointProgram
 
 class LittleBallRender(val context: Context) : VisualizerRender() {
 

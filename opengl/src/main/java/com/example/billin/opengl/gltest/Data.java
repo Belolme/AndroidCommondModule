@@ -1,4 +1,4 @@
-package com.example.billin.opengl;
+package com.example.billin.opengl.gltest;
 
 public class Data {
     public static double[] _1 = new double[]{

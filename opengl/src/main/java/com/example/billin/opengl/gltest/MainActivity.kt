@@ -1,4 +1,4 @@
-package com.example.billin.opengl
+package com.example.billin.opengl.gltest
 
 import android.app.ActivityManager
 import android.content.Context
@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.ImageView
 import android.widget.Toast
+import com.example.billin.opengl.R
 import javax.microedition.khronos.egl.EGL10
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.egl.EGLDisplay

@@ -1,10 +1,16 @@
-package com.example.billin.opengl
+package com.example.billin.opengl.gltest
 
 import android.content.Context
 import android.graphics.Color
 import android.opengl.GLES20.*
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import com.example.billin.opengl.base.apply
+import com.example.billin.opengl.base.draw
+import com.example.billin.opengl.program.BaseTriangleProgram
+import com.example.billin.opengl.program.GradientTriangleProgram
+import com.example.billin.opengl.program.RoundCapLineProgram
+import com.example.billin.opengl.program.RoundPointProgram
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
