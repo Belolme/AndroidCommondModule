@@ -115,7 +115,8 @@ public class CropImageView extends AppCompatImageView {
      * 继承 {@link android.widget.ImageView#setFrame(int, int, int, int)} 方法
      * 不继承 {@link android.view.View#onSizeChanged(int, int, int, int)}
      * 方法的原因是 {@link android.widget.ImageView} 是在 {@link android.widget.ImageView#setFrame(int, int, int, int)}
-     * 方法里面处理 {@link Drawable} 尺寸相关设置的。
+     * 方法里面处理 {@link Drawable} 尺寸相关设置的。{@link #onSizeChanged(int, int, int, int)} 被调用的
+     * 时候，{@link Drawable} 尺寸还没被处理。
      */
     @Override
     protected boolean setFrame(int l, int t, int r, int b) {
