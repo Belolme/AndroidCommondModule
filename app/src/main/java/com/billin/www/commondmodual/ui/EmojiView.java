@@ -11,10 +11,14 @@ import android.graphics.drawable.Drawable;
 import android.support.v7.content.res.AppCompatResources;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
 
 import com.billin.www.commondmodual.R;
+
+import java.lang.reflect.Field;
 
 /**
  * 贴纸视图，提供放大缩小、旋转和关闭操作。
@@ -199,6 +203,22 @@ public class EmojiView extends AppCompatImageView {
             case ACTION_SCALE:
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     viewRatio = 1f * getWidth() / getHeight();
+
+                    // 如果添加到 ViewGroup 的时候添加了 Gravity 属性，那么移除掉这个属性
+                    // 这么做的原因是存在该属性的时候，是依据设置的 Gravity 属性放大缩小的，不是
+                    // 以 closeDrawable 为坐标中心放大缩小。
+                    if (getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                        ((ViewGroup.MarginLayoutParams) getLayoutParams()).leftMargin = getLeft();
+                        ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin = getTop();
+                    }
+
+                    try {
+                        Field gravityField = getLayoutParams().getClass().getDeclaredField("gravity");
+                        gravityField.set(getLayoutParams(), Gravity.NO_GRAVITY);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        Log.w(TAG, "onTouchEvent: view parent layoutParam not have gravity attribution", e);
+                    }
+
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 
                     // 只限制最小，不限制最大
