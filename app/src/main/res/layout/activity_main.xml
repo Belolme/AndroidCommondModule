@@ -11,6 +11,19 @@
         android:scaleType="fitXY"
         android:src="@drawable/ic_launcher_background" />
 
+    <ImageView
+        android:id="@+id/preview"
+        android:layout_width="200dp"
+        android:background="@android:color/white"
+        android:layout_gravity="right"
+        android:layout_height="200dp" />
+
+    <Button
+        android:id="@+id/save_pic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="save pic" />
+
     <com.billin.www.commondmodual.ui.EmojiView
         android:id="@+id/image1"
         android:layout_width="200dp"
