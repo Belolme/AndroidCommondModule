@@ -93,7 +93,12 @@ public class DiskCacheResourcesLoader implements ModelLoader<DiskCacheResources,
                     }
                 }
 
-                diskCacheMap.put(resources.getCacheFold(), DiskLruCacheWrapper.create(cacheFold, DEFAULT_SIZE));
+                // 保证只创建一个 DiskLruCacheWrapper
+                synchronized (InternalDataFetcher.class) {
+                    if (diskCacheMap.get(resources.getCacheFold()) == null) {
+                        diskCacheMap.put(resources.getCacheFold(), DiskLruCacheWrapper.create(cacheFold, DEFAULT_SIZE));
+                    }
+                }
             }
 
             diskLruCache = diskCacheMap.get(resources.getCacheFold());

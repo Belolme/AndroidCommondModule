@@ -19,7 +19,7 @@ public class GlideTestActivity extends AppCompatActivity {
         ImageView imageView = findViewById(R.id.image);
         GlideApp.with(this)
                 .load(new DiskCacheResources(
-                        "https://pic.rmb.bdstatic.com/c86255e8028696139d3e3e4bb44c047b.png",
+                        "https://dgit.com/wp-content/uploads/2017/05/HDR-Sample.jpg",
                         getDir("glide_resource_test", Context.MODE_PRIVATE).getPath()
                 ))
 //                .load("https://pic.rmb.bdstatic.com/c86255e8028696139d3e3e4bb44c047b.png")
