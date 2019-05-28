@@ -1,4 +1,4 @@
-package com.billin.www.commondmodual.ui;
+package com.billin.www.commondmodual.ui.sticker;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -11,7 +11,9 @@ import android.graphics.drawable.Drawable;
 import android.support.v7.content.res.AppCompatResources;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
@@ -29,10 +31,6 @@ public class EmojiView extends AppCompatImageView {
 
     private static final String TAG = "EmojiView";
 
-    private static final int CONTROL_ICON_SIZE = 64;
-
-    private static final int CONTROL_LINE_WIDTH = 8;
-
     private static final int ACTION_CLOSE = 0;
 
     private static final int ACTION_SCALE = 1;
@@ -40,6 +38,15 @@ public class EmojiView extends AppCompatImageView {
     private static final int ACTION_ROTATE = 2;
 
     private static final int ACTION_NONE = -1;
+
+    private final int controlIconSize;
+
+    private final int controlLineWidth;
+
+    /**
+     * emoji 贴图大小的最小值. 缩放操作缩小的贴图不能小于这个数值.
+     */
+    private int emojiMinSize = 76;
 
     private Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
@@ -65,6 +72,11 @@ public class EmojiView extends AppCompatImageView {
      */
     private float viewRatio = -1;
 
+    /**
+     * view 在 ViewGroup 的中心点，目前仅在放大缩小操作中做状态记录用。
+     */
+    private float centerX, centerY;
+
     public EmojiView(Context context) {
         this(context, null);
     }
@@ -72,41 +84,48 @@ public class EmojiView extends AppCompatImageView {
     public EmojiView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context);
+        DisplayMetrics dm = context.getResources().getDisplayMetrics();
+        controlLineWidth = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, dm);
+        controlIconSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 21, dm);
     }
 
     private void init(Context context) {
-        paint.setColor(Color.RED);
+        paint.setColor(Color.parseColor("#ccf5a623"));
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(CONTROL_LINE_WIDTH);
+        paint.setStrokeWidth(controlLineWidth);
         paint.setAntiAlias(true);
 
         closeDrawable = AppCompatResources.getDrawable(context, R.mipmap.emoji_delete);
         rotateDrawable = AppCompatResources.getDrawable(context, R.mipmap.emoji_rotate);
         scaleDrawable = AppCompatResources.getDrawable(context, R.mipmap.emoji_zoom);
 
-        setPivotX(CONTROL_ICON_SIZE / 2f);
-        setPivotY(CONTROL_ICON_SIZE / 2f);
+        // importance! 让 View 的比例和 drawable 比例一致
+        setAdjustViewBounds(true);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int controlSize = controlIconSize * 2;
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int height = MeasureSpec.getSize(heightMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+
+        // 其分配的空间为 ViewGroup 分配空间减去两个控制按钮的空间
+        super.onMeasure(
+                MeasureSpec.makeMeasureSpec(width - controlSize < 0 ? 0 : width - controlSize, widthMode),
+                MeasureSpec.makeMeasureSpec(height - controlSize < 0 ? 0 : height - controlSize, heightMode)
+        );
 
         // 长宽加上两个控制按钮的大小
-        int width = getMeasuredWidth() + CONTROL_ICON_SIZE * 2;
-        int height = getMeasuredHeight() + CONTROL_ICON_SIZE * 2;
+        int measureWidth = getMeasuredWidth() + controlSize;
+        int measureHeight = getMeasuredHeight() + controlSize;
 
-        // 当 MeasureSpec Mode 为 AT_MOST 的时候，应该加上控制框的空间
-        if (getAdjustViewBounds()) {
-            // TODO: 2019/5/14  这里不知道为什么 ImageView 会限制 view 的范围在 ViewGroup 范围内
-        } else {
-            width = resolveSize(width, widthMeasureSpec);
-            height = resolveSize(height, heightMeasureSpec);
-        }
+        measureWidth = resolveSize(measureWidth, widthMeasureSpec);
+        measureHeight = resolveSize(measureHeight, heightMeasureSpec);
 
-        setMeasuredDimension(width, height);
+        setMeasuredDimension(measureWidth, measureHeight);
     }
-
 
     /**
      * 该方法不会在 {@link #setLeft(int)}, {@link #setRight(int)} 等方法中被调用，这些方法会直接在内部调用
@@ -124,15 +143,18 @@ public class EmojiView extends AppCompatImageView {
             // 把画布缩小到内容区域
             contentMatrix.reset();
             contentMatrix.setScale(
-                    (w - 2 * CONTROL_ICON_SIZE) * 1f / w,
-                    (h - 2 * CONTROL_ICON_SIZE) * 1f / h,
+                    (w - 2 * controlIconSize) * 1f / w,
+                    (h - 2 * controlIconSize) * 1f / h,
                     w / 2f,
                     h / 2f);
 
             // 设置 control icon 绘制的位置
-            closeDrawable.setBounds(0, 0, CONTROL_ICON_SIZE, CONTROL_ICON_SIZE);
-            rotateDrawable.setBounds(w - CONTROL_ICON_SIZE, 0, w, CONTROL_ICON_SIZE);
-            scaleDrawable.setBounds(w - CONTROL_ICON_SIZE, h - CONTROL_ICON_SIZE, w, h);
+            closeDrawable.setBounds(0, 0, controlIconSize, controlIconSize);
+            rotateDrawable.setBounds(w - controlIconSize, 0, w, controlIconSize);
+            scaleDrawable.setBounds(w - controlIconSize, h - controlIconSize, w, h);
+
+            setPivotX((r - l) / 2f);
+            setPivotY((b - t) / 2f);
         }
 
         return change;
@@ -168,7 +190,8 @@ public class EmojiView extends AppCompatImageView {
 
             case ACTION_ROTATE:
                 if (event.getAction() == MotionEvent.ACTION_MOVE) {
-                    float origin = CONTROL_ICON_SIZE / 2f;
+                    float originX = getWidth() / 2f;
+                    float originY = getHeight() / 2f;
 
                     tmpPoints[0] = event.getX();
                     tmpPoints[1] = event.getY();
@@ -177,20 +200,22 @@ public class EmojiView extends AppCompatImageView {
 
                     float eventX = tmpPoints[0];
                     float eventY = tmpPoints[1];
-                    float vectorX = eventX - origin;
-                    float vectorY = eventY - origin;
+                    float vectorX = eventX - originX;
+                    float vectorY = eventY - originY;
 
                     double l = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
                     double x = vectorX / l;
                     double angle = Math.acos(x) * 180.0 / Math.PI;
-                    if (eventY == origin) {
-                        if (eventX < origin) {
-                            angle = 180;
+                    if (eventY == originX) {
+                        if (eventX < originX) {
+                            angle = -45;
                         } else {
-                            angle = 0;
+                            angle = 45;
                         }
-                    } else if (eventY < origin) {
-                        angle = -angle;
+                    } else if (eventY < originX) {
+                        angle = -(angle - 45);
+                    } else {
+                        angle = angle + 45;
                     }
 
                     if (!Double.isNaN(angle)) {
@@ -210,29 +235,48 @@ public class EmojiView extends AppCompatImageView {
                     if (getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
                         ((ViewGroup.MarginLayoutParams) getLayoutParams()).leftMargin = getLeft();
                         ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin = getTop();
+
+                        // 记录当前 view 中心点，避免在放大缩小过程中出现太大的计算误差
+                        centerX = getWidth() / 2f + getLeft();
+                        centerY = getHeight() / 2f + getTop();
                     }
 
                     try {
                         Field gravityField = getLayoutParams().getClass().getDeclaredField("gravity");
                         gravityField.set(getLayoutParams(), Gravity.NO_GRAVITY);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                    } catch (NoSuchFieldException e) {
+                        Log.w(TAG, "onTouchEvent: view parent layoutParam not have gravity attribution", e);
+                    } catch (IllegalAccessException e) {
                         Log.w(TAG, "onTouchEvent: view parent layoutParam not have gravity attribution", e);
                     }
-
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
 
                     // 只限制最小，不限制最大
                     // 保证 View 比例不变, 优先高依据移动的坐标点设置
-                    float minSize = CONTROL_ICON_SIZE * 2f;
-                    float h = Math.max(event.getY() + CONTROL_ICON_SIZE / 2f, minSize);
+                    float minSize = controlIconSize * 2f + emojiMinSize;
+//                    float h = Math.max(event.getY() + controlIconSize / 2f, minSize);
+//                    float w = h * viewRatio;
+
+                    float h = Math.max(2 * event.getY() - getHeight() + controlIconSize, minSize);
                     float w = h * viewRatio;
+
                     if (w < minSize) {
                         w = minSize;
                         h = w / viewRatio;
                     }
 
+                    if (getWidth() == w && getHeight() == h) {
+                        break;
+                    }
+
                     getLayoutParams().width = (int) w;
                     getLayoutParams().height = (int) h;
+                    if (getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                        float leftMargin = centerX - w / 2f;
+                        ((ViewGroup.MarginLayoutParams) getLayoutParams()).leftMargin = (int) leftMargin;
+                        float topMargin = centerY - h / 2f;
+                        ((ViewGroup.MarginLayoutParams) getLayoutParams()).topMargin = (int) topMargin;
+                    }
                     requestLayout();
                 }
                 break;
@@ -256,10 +300,10 @@ public class EmojiView extends AppCompatImageView {
         if (isSelected()) {
             // 绘制控制边框
             framePath.reset();
-            framePath.moveTo(CONTROL_ICON_SIZE / 2f, CONTROL_ICON_SIZE / 2f);
-            framePath.rLineTo(getWidth() - CONTROL_ICON_SIZE, 0);
-            framePath.rLineTo(0, getHeight() - CONTROL_ICON_SIZE);
-            framePath.rLineTo(-(getWidth() - CONTROL_ICON_SIZE), 0);
+            framePath.moveTo(controlIconSize / 2f, controlIconSize / 2f);
+            framePath.rLineTo(getWidth() - controlIconSize, 0);
+            framePath.rLineTo(0, getHeight() - controlIconSize);
+            framePath.rLineTo(-(getWidth() - controlIconSize), 0);
             framePath.close();
             canvas.drawPath(framePath, paint);
 
