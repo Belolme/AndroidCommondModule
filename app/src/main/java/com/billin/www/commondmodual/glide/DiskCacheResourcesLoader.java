@@ -86,7 +86,7 @@ public class DiskCacheResourcesLoader implements ModelLoader<DiskCacheResources,
                 File cacheFold = new File(resources.getCacheFold());
 
                 if (!cacheFold.isDirectory()) {
-                    if (cacheFold.mkdirs()) {
+                    if (!cacheFold.mkdirs()) {
                         Log.e(TAG, "buildLoadData: cannot make cache dir!!!");
                         callback.onLoadFailed(new RuntimeException("buildLoadData: cannot make cache dir!!!"));
                         return;
