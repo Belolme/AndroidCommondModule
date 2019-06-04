@@ -31,11 +31,10 @@ public class CircleColorPicker extends View {
     @Dimension(unit = Dimension.DP)
     private static final int DEFAULT_SWITCH_DRAWABLE_SIZE = 24;
 
-    @Dimension(unit = Dimension.DP)
-    private static final int DEFAULT_RING_SIZE = 4;
-
-    @Dimension(unit = Dimension.DP)
-    private static final int DEFAULT_RING_RADIUS = 128;
+    /**
+     * 默认的圆环半径和视图半径的比例.
+     */
+    private static final float DEFAULT_RING_AND_RADIUS_RATIO = 0.0382f;
 
     /**
      * 该值定义了在 360° 的色环中每隔多少度取色. 用户旋转色环中的开关，
@@ -51,8 +50,12 @@ public class CircleColorPicker extends View {
     @Nullable
     private ColorChangeListener colorChangeListener;
 
-    @Px
-    private int ringSize;
+    /**
+     * 该值定义了圆环半径和视图半径长度的比例.
+     * 取值范围为 [0, 1]
+     */
+    @FloatRange(from = 0f, to = 1f)
+    private float ringAndRadiusRatio;
 
     @Px
     private int ringRadius;
@@ -92,22 +95,12 @@ public class CircleColorPicker extends View {
                 DEFAULT_SWITCH_DRAWABLE_SIZE,
                 getResources().getDisplayMetrics()
         );
-        ringSize = (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP,
-                DEFAULT_RING_SIZE,
-                getResources().getDisplayMetrics()
-        );
-        ringRadius = (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP,
-                DEFAULT_RING_RADIUS,
-                getResources().getDisplayMetrics()
-        );
+        ringAndRadiusRatio = DEFAULT_RING_AND_RADIUS_RATIO;
 
         ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         switchPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         ringPaint.setStyle(Paint.Style.STROKE);
-        ringPaint.setStrokeWidth(ringSize);
 
         switchPaint.setStyle(Paint.Style.FILL);
 
@@ -141,23 +134,16 @@ public class CircleColorPicker extends View {
         switchFrame = new RectF();
     }
 
-    @Px
-    public int getRingSize() {
-        return ringSize;
+    @FloatRange(from = 0f, to = 1f)
+    public float getRingAndRadiusRatio() {
+        return ringAndRadiusRatio;
     }
 
-    public void setRingSize(@Px int ringSize) {
-        this.ringSize = ringSize;
-        postInvalidate();
-    }
+    public void setRingAndRadiusRatio(@FloatRange(from = 0f, to = 1f) float ratio) {
+        ratio = ratio < 0f ? 0f : ratio > 1f ? 1f : ratio;
+        this.ringAndRadiusRatio = ratio;
 
-    @Px
-    public int getRingRadius() {
-        return ringRadius;
-    }
-
-    public void setRingRadius(@Px int ringRadius) {
-        this.ringRadius = ringRadius;
+        setupRingAndSwitch(getWidth(), getHeight());
         postInvalidate();
     }
 
@@ -167,7 +153,10 @@ public class CircleColorPicker extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int desireSize = ringRadius * 2 + Math.max(ringSize, switchSize);
+        int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
+        int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
+        int desireSize = Math.min(parentHeight, parentWidth);
+
         setMeasuredDimension(
                 resolveSize(desireSize, widthMeasureSpec),
                 resolveSize(desireSize, heightMeasureSpec)
@@ -182,6 +171,15 @@ public class CircleColorPicker extends View {
         gradientMatrix.setRotate(-90, w / 2f, h / 2f);
         gradient.setLocalMatrix(gradientMatrix);
         ringPaint.setShader(gradient);
+
+        setupRingAndSwitch(w, h);
+    }
+
+    private void setupRingAndSwitch(int w, int h) {
+        // init ring radius
+        int ringSize = (int) (ringAndRadiusRatio * Math.min(w, h) / 2);
+        ringRadius = (Math.min(getWidth(), getHeight()) - Math.max(ringSize, switchSize)) / 2;
+        ringPaint.setStrokeWidth(ringSize);
 
         // init switch frame
         setHue(switchDegree);
@@ -274,8 +272,7 @@ public class CircleColorPicker extends View {
 
         SaveState ss = new SaveState(superState);
         ss.hue = switchDegree;
-        ss.ringRadius = ringRadius;
-        ss.ringSize = ringSize;
+        ss.ringRatio = ringAndRadiusRatio;
         return ss;
     }
 
@@ -284,33 +281,29 @@ public class CircleColorPicker extends View {
         SaveState ss = (SaveState) state;
         super.onRestoreInstanceState(ss.getSuperState());
 
-        setRingRadius(ss.ringRadius);
-        setRingSize(ss.ringSize);
+        setRingAndRadiusRatio(ss.ringRatio);
         setHue(ss.hue);
     }
 
     public static class SaveState extends BaseSavedState {
         float hue;
-        int ringSize;
-        int ringRadius;
+        float ringRatio;
 
-        public SaveState(Parcelable superState) {
+        SaveState(Parcelable superState) {
             super(superState);
         }
 
         private SaveState(Parcel in) {
             super(in);
             hue = in.readFloat();
-            ringSize = in.readInt();
-            ringRadius = in.readInt();
+            ringRatio = in.readFloat();
         }
 
         @Override
         public void writeToParcel(Parcel out, int flags) {
             super.writeToParcel(out, flags);
             out.writeFloat(hue);
-            out.writeInt(ringSize);
-            out.writeInt(ringRadius);
+            out.writeFloat(ringRatio);
         }
 
         public static final Parcelable.Creator<SaveState> CREATOR

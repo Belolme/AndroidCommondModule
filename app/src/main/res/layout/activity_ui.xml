@@ -4,8 +4,17 @@
     android:layout_height="match_parent">
 
     <com.billin.www.commondmodual.ui.colorpicker.CircleColorPicker
-        android:id="@+id/color_picker"
+        android:id="@+id/colorPicker"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
+
+    <Button
+        android:id="@+id/testButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_margin="16dp"
+        android:text="test" />
 
 </FrameLayout>
