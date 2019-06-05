@@ -206,6 +206,8 @@ public class CircleColorPicker extends View {
         hsv[0] = hue;
         getSwitchFrame(switchFrame);
         invalidate();
+
+        if (colorChangeListener != null) colorChangeListener.onChange(hue);
     }
 
     /**
