@@ -9,8 +9,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.SweepGradient;
 import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.OvalShape;
-import android.graphics.drawable.shapes.RoundRectShape;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Dimension;
@@ -60,9 +58,7 @@ public class CircleColorPicker extends View {
     @Px
     private int ringRadius;
 
-    private ShapeDrawable switchContentDrawable;
-
-    private ShapeDrawable switchFrameDrawable;
+    private ShapeDrawable switchDrawable;
 
     private int switchSize;
 
@@ -104,21 +100,8 @@ public class CircleColorPicker extends View {
 
         switchPaint.setStyle(Paint.Style.FILL);
 
-        switchContentDrawable = new ShapeDrawable(new OvalShape());
-        switchContentDrawable.setBounds(0, 0, switchSize, switchSize);
-
-        float[] outerRadii = new float[8];
-        float[] innerRadii = new float[8];
-        float switchSizeBy2 = switchSize / 2f;
-        for (int i = 0; i < outerRadii.length; i++) {
-            outerRadii[i] = switchSizeBy2;
-            innerRadii[i] = switchSizeBy2 - 5;
-        }
-        RectF insert = new RectF(6, 6, 6, 6);
-        switchFrameDrawable = new ShapeDrawable(new RoundRectShape(outerRadii, insert, innerRadii));
-        switchFrameDrawable.getPaint().setColor(Color.WHITE);
-        switchFrameDrawable.getPaint().setShadowLayer(2, 1, 1, Color.DKGRAY);
-        switchFrameDrawable.setBounds(0, 0, switchSize, switchSize);
+        switchDrawable = new ShapeDrawable(new OutlineOvalShape(Color.WHITE, Color.RED, 0.2f));
+        switchDrawable.setBounds(0, 0, switchSize, switchSize);
 
         ringColor = new int[360 / HSV_DEGREE_INTERVAL];
         // init color ring in hsv format,
@@ -191,9 +174,8 @@ public class CircleColorPicker extends View {
 
         canvas.translate(switchFrame.left, switchFrame.top);
 
-        switchContentDrawable.getPaint().setColor(Color.HSVToColor(hsv));
-        switchContentDrawable.draw(canvas);
-        switchFrameDrawable.draw(canvas);
+        ((OutlineOvalShape) switchDrawable.getShape()).setContentColor(Color.HSVToColor(hsv));
+        switchDrawable.draw(canvas);
     }
 
     private double getSwitchX() {
