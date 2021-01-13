@@ -1,7 +1,7 @@
 package com.example.billin.opengl.visualizer;
 
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 /**
  * 整理波形数据并绘制波形图的实际类
