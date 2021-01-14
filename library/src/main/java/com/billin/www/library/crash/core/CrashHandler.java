@@ -30,7 +30,9 @@ public class CrashHandler {
     }
 
     private CrashHandler() {
+    }
 
+    public void init() {
         mInterceptors = new ArrayList<>();
 
         Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {

@@ -1,6 +1,8 @@
 package com.billin.www.library.crash.core;
 
 
+import androidx.annotation.NonNull;
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,20 +11,21 @@ import java.util.List;
  * <p>
  * Create by Billin on 2018/12/28
  */
-public class CrashInterceptorChain implements CrashInterceptor.Chain {
+class CrashInterceptorChain implements CrashInterceptor.Chain {
 
-    private Thread thread;
+    private final Thread thread;
 
-    private Throwable throwable;
+    private final Throwable throwable;
 
-    private List<CrashInterceptor> interceptors;
+    private final List<CrashInterceptor> interceptors;
 
-    private int nextIndex;
+    private final int nextIndex;
 
-    public CrashInterceptorChain(Thread thread,
-                                 Throwable throwable,
-                                 List<CrashInterceptor> crashInterceptors,
-                                 int interceptorIndex) {
+    CrashInterceptorChain(
+            Thread thread,
+            Throwable throwable,
+            @NonNull List<CrashInterceptor> crashInterceptors,
+            int interceptorIndex) {
         this.thread = thread;
         this.throwable = throwable;
         this.interceptors = crashInterceptors;
@@ -43,7 +46,8 @@ public class CrashInterceptorChain implements CrashInterceptor.Chain {
     public HashMap<String, String> process() {
         if (nextIndex < 0) return new HashMap<>();
 
-        return interceptors.get(nextIndex)
-                .interceptor(new CrashInterceptorChain(thread, throwable, interceptors, nextIndex));
+        return interceptors.get(nextIndex).interceptor(new CrashInterceptorChain(
+                thread, throwable, interceptors, nextIndex
+        ));
     }
 }

@@ -1,4 +1,4 @@
-package com.billin.www.library.crash
+package com.billin.www.library.crash.interceptor
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
