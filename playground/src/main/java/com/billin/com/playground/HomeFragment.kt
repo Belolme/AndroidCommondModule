@@ -9,7 +9,7 @@ import androidx.navigation.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.billin.com.playground.databinding.FragmentHomeBinding
-import com.billin.com.playground.databinding.FragmentHomeItemTextBinding
+import com.billin.com.playground.databinding.ItemTextBinding
 
 class HomeFragment : Fragment() {
 
@@ -29,7 +29,14 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         data = listOf(
-            TextItem(getString(R.string.fragment_name_crash), nav_graph.action.home_to_crash)
+            TextItem(
+                getString(R.string.fragment_name_crash),
+                nav_graph.action.home_to_crash
+            ),
+            TextItem(
+                getString(R.string.fragment_name_bottom_sheet_behavior),
+                nav_graph.action.home_to_bottomSheetBehavior
+            )
         )
 
         binding.recyclerView.apply {
@@ -42,7 +49,7 @@ class HomeFragment : Fragment() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TextVH {
             return LayoutInflater.from(context).inflate(
-                R.layout.fragment_home_item_text,
+                R.layout.item_text,
                 parent,
                 false
             ).let { view ->
@@ -63,7 +70,7 @@ class HomeFragment : Fragment() {
 }
 
 private class TextVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    private val binding = FragmentHomeItemTextBinding.bind(itemView)
+    private val binding = ItemTextBinding.bind(itemView)
     var onItemClickListener: ((pos: Int) -> Unit)? = null
 
     init {
@@ -74,7 +81,7 @@ private class TextVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
     }
 
     fun bind(item: TextItem) {
-        binding.fragmentHomeItemTextTv.text = item.name
+        binding.tv.text = item.name
     }
 }
 

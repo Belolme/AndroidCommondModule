@@ -17,10 +17,12 @@ object nav_graph {
     object dest {
         val home = nextIndex
         val crash = nextIndex
+        val bottomSheetBehavior = nextIndex
     }
 
     object action {
         val home_to_crash = nextIndex
+        val home_to_bottomSheetBehavior = nextIndex
     }
 
 
@@ -46,8 +48,12 @@ object nav_graph {
 
         fragment<HomeFragment>(dest.home) {
             label = context.getString(R.string.fragment_name_home)
+            deepLink(baseUrl)
             defaultAction(action.home_to_crash) {
                 destinationId = dest.crash
+            }
+            defaultAction(action.home_to_bottomSheetBehavior) {
+                destinationId = dest.bottomSheetBehavior
             }
         }
 
@@ -56,5 +62,9 @@ object nav_graph {
             deepLink("$baseUrl/crash")
         }
 
+        fragment<BottomSheetBehaviorFragment>(dest.bottomSheetBehavior) {
+            label = context.getString(R.string.fragment_name_bottom_sheet_behavior)
+            deepLink("$baseUrl/bottomsheetbehavior")
+        }
     }
 }

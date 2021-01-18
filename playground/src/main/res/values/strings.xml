@@ -2,4 +2,5 @@
     <string name="app_name">playground</string>
     <string name="fragment_name_home">Home</string>
     <string name="fragment_name_crash">Crash</string>
+    <string name="fragment_name_bottom_sheet_behavior">Bottom Sheet Behavior</string>
 </resources>

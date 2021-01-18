@@ -6,7 +6,7 @@
     android:background="?selectableItemBackground">
 
     <TextView
-        android:id="@+id/fragment_home_item_text_tv"
+        android:id="@+id/tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
